@@ -16,6 +16,64 @@ class Trader:
             'BANANAS': Queue(50, 5000)
         }
     
+    
+    def update(self, order_depths, ):
+        """
+        Calls get_level_two_depth for dict: PRODUCT -> (max bid1, max bid2, max ask1, max ask2)
+        """    
+        level_two_depths = self.get_level_two_depth(order_depths)
+
+        for product in order_depths:
+            #Updating product data containing window of recent prices
+            q = self.product_data[product]
+            prices = level_two_depths[product]
+            for price in prices:
+                if price:
+                    q.enque(price)
+            #Updating depth imbalance - TODO
+            
+            
+        
+
+    def get_level_two_depth(self, order_depths):
+        """
+        Gets 2 min asks and 2 max bids, returns in format dict: PRODUCT -> (max bid1, max bid2, max ask1, max ask2)
+        """
+        #best_ask = min(order_depth.sell_orders.keys())
+        min_and_max = {}
+        for product in order_depths:
+            order_depth = order_depths[product]
+            
+            max1, max2 = 0, 0
+            for price in order_depth.buy_orders:
+                if price > max2:
+                    if price > max1:
+                        max1, max2 = price, max1
+                    else:
+                        max2 = price
+
+            min1, min2 = float('inf'), float('inf')
+            for price in order_depth.sell_orders:
+                if price < min2:
+                    if price < min1:
+                        min1, min2 = price, max1
+                    else:
+                        min2 = price
+        
+            if min2 == float('inf'):
+                if min1 == float('inf'):
+                    min1, min2 = None, None
+                min2 = None
+
+            if max2 == 0:
+                if max1 == 0:
+                    max1, max2 = None, None
+                max2 = None
+
+            min_and_max[product] = (max1, max2, min1, min2)
+        return min_and_max
+
+
     def update_prices(self, order_depths):
         p = 0.7
         for product in order_depths:
@@ -56,13 +114,16 @@ class Trader:
 
         # Initialize the method output dict as an empty dict
         result = {}
-        acceptable_prices = {
-            'PEARLS': self.avgs['PEARLS'],#10000,
-            'BANANAS': 5000
-        }
 
         # Iterate over all the keys (the available products) contained in the order dephts
         for product in state.order_depths:
+            if product == 'PEARLS':
+
+
+
+
+
+
 
             # Retrieve the Order Depth containing all the market BUY and SELL orders for PEARLS
             order_depth: OrderDepth = state.order_depths[product]
