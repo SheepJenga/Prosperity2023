@@ -8,7 +8,9 @@ import numpy as np
 class Trader:
     def __init__(self) -> None:
         self.data = []
+        self.t = 0
         self.acceptable_prices = {}
+        self.depth_imbalance = {}
     
     def update_prices(self, order_depths):
         p = 0.7
@@ -17,6 +19,17 @@ class Trader:
             min_ask = min(order_depth.sell_orders.keys())
             max_bid = max(order_depth.buy_orders.keys())
             self.acceptable_prices[product] = p * self.acceptable_prices[product] + (1 - p) * 0.5 * (min_ask + max_bid)
+    
+    def update_depth_imbalance(self, order_depths):
+        for product in order_depths:
+            prev_DI, prev_BV, prev_AV = self.depth_imbalance[product]
+            order_depth = order_depths[product]
+
+            new_BV = prev_BV + TODO
+            new_AV = prev_AV + TODO
+            new_DI = (new_BV - new_AV) / (new_BV + new_AV)
+
+            self.depth_imbalance[product] = new_DI, new_BV, new_AV
 
     def run(self, state: TradingState) -> Dict[str, List[Order]]:
         """
@@ -34,6 +47,8 @@ class Trader:
             sell order: if exists buy order > fair value
             buy order: if exists sell order < fair value
         """
+        self.t += 1
+        self.update_depth_imbalance()
 
         # Initialize the method output dict as an empty dict
         result = {}
