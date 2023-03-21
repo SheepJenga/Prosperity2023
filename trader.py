@@ -11,12 +11,14 @@ class Trader:
         self.t = 0
         self.acceptable_prices = {}
         self.depth_imbalance = {}
-        self.moments = {}
-        self.variances = {}
+        self.product_data = {
+            'PEARLS': Queue(100, 10000),
+            'BANANAS': Queue(50, 5000)
+        }
     
     def update_prices(self, order_depths):
         p = 0.7
-        for product in order_depths: # iterate through every product
+        for product in order_depths:
             order_depth = order_depths[product]
             min_ask = min(order_depth.sell_orders.keys())
             max_bid = max(order_depth.buy_orders.keys())
@@ -32,17 +34,7 @@ class Trader:
             new_DI = (new_BV - new_AV) / (new_BV + new_AV)
 
             self.depth_imbalance[product] = new_DI, new_BV, new_AV
-    
-    def update_moments(self):
-        for product in self.moments:
-            first_moment, second_moment = self.moments[product]
-            new_first_moment = first_moment * ((self.t - 1) / self.t) + self.acceptable_prices[product] / self.t
-            new_second_moment = second_moment * ((self.t - 1) / self.t) + self.acceptable_prices[product]**2 / self.t
-            self.moments[product] = new_first_moment, new_second_moment
-    
-    def get_variance(self, product):
-        return self.moments[product][1] - self.moments[product][0]**2
-
+            
     def run(self, state: TradingState) -> Dict[str, List[Order]]:
         """
         Only method required. It takes all buy and sell orders for all symbols as an input,
@@ -121,3 +113,25 @@ class Trader:
                 # These possibly contain buy or sell orders for PEARLS
                 # Depending on the logic above
         return result
+
+class Queue:
+    def __init__(self, size, init_val):
+        self.n = size
+        self.head = 0
+        self.data = [init_val for _ in range(size)]
+        self.mean = init_val
+        self.var = 0
+
+    def enque(self, val):
+        self.head = (self.head + 1) % self.size
+        prev_mean = self.mean
+        old_val = self.data[self.head]
+        self.mean += (val - old_val) / self.n
+        self.var += ((val - prev_mean) * (val - self.mean) - (old_val - prev_mean) * (old_val - self.mean)) / self.n
+        self.data[self.head] = val 
+
+    def get_mean(self):
+        return self.mean
+    
+    def get_var(self):
+        return self.var
