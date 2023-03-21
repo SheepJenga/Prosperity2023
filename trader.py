@@ -11,6 +11,8 @@ class Trader:
         self.t = 0
         self.acceptable_prices = {}
         self.depth_imbalance = {}
+        self.moments = {}
+        self.variances = {}
     
     def update_prices(self, order_depths):
         p = 0.7
@@ -30,6 +32,16 @@ class Trader:
             new_DI = (new_BV - new_AV) / (new_BV + new_AV)
 
             self.depth_imbalance[product] = new_DI, new_BV, new_AV
+    
+    def update_moments(self):
+        for product in self.moments:
+            first_moment, second_moment = self.moments[product]
+            new_first_moment = first_moment * ((self.t - 1) / self.t) + self.acceptable_prices[product] / self.t
+            new_second_moment = second_moment * ((self.t - 1) / self.t) + self.acceptable_prices[product]**2 / self.t
+            self.moments[product] = new_first_moment, new_second_moment
+    
+    def get_variance(self, product):
+        return self.moments[product][1] - self.moments[product][0]**2
 
     def run(self, state: TradingState) -> Dict[str, List[Order]]:
         """
