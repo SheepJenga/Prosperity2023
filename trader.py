@@ -1,23 +1,49 @@
 from typing import Dict, List
 from datamodel import OrderDepth, TradingState, Order
-
+import statistics
+import math
+import pandas as pd
+import numpy as np
 
 class Trader:
+    def __init__(self) -> None:
+        self.data = []
+        self.acceptable_prices = {}
+    
+    def update_prices(self, order_depths):
+        p = 0.7
+        for product in order_depths: # iterate through every product
+            order_depth = order_depths[product]
+            min_ask = min(order_depth.sell_orders.keys())
+            max_bid = max(order_depth.buy_orders.keys())
+            self.acceptable_prices[product] = p * self.acceptable_prices[product] + (1 - p) * 0.5 * (min_ask + max_bid)
 
     def run(self, state: TradingState) -> Dict[str, List[Order]]:
         """
         Only method required. It takes all buy and sell orders for all symbols as an input,
         and outputs a list of orders to be sent
         """
+
+        """
+        Strategy:
+
+        1) get fair value
+            bananas: moving average? = fair value
+            pearls: trade around (average +/- variance)
+        2) send trade orders:
+            sell order: if exists buy order > fair value
+            buy order: if exists sell order < fair value
+        """
+
         # Initialize the method output dict as an empty dict
         result = {}
         acceptable_prices = {
-            'PEARLS': 10000,
+            'PEARLS': self.avgs['PEARLS'],#10000,
             'BANANAS': 5000
         }
 
         # Iterate over all the keys (the available products) contained in the order dephts
-        for product in state.order_depths.keys():
+        for product in state.order_depths:
 
             # Retrieve the Order Depth containing all the market BUY and SELL orders for PEARLS
             order_depth: OrderDepth = state.order_depths[product]
