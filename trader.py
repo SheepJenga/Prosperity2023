@@ -116,7 +116,6 @@ class Trader:
             remaining_buy, remaining_sell = self.get_remaining_buy_sell(state, product)
             orders = []
             stats = self.product_data[product]
-            order_depth = state.order_depths[product]
 
             if product == 'PEARLS':
                 if remaining_buy:
@@ -131,14 +130,26 @@ class Trader:
                 result[product] = orders
 
             elif product == 'BANANAS':
-                if self.depth_imbalance[product] > 0.7 and remaining_buy: # high positive imbalance, large likelihood prices will increase, higher demand than supply, buy as much as possible as this is peak low, BUY LOW
-                    price = self.product_data[product].mean # moving average: approximate the price at the current "dip" 
+                #### STRATEGY: LARGER DI LARGER THRESHOLD ####
+                scaling_factor = math.abs(self.depth_imbalance[product] - 0.5) + 1
+                if remaining_buy:
+                    price = stats.mean - scaling_factor*math.sqrt(stats.get_var() / 2)
                     print("BUY", str(remaining_buy) + "x", price)
                     orders.append(Order(product, price, remaining_buy))
-                elif self.depth_imbalance[product] < 0.3 and remaining_sell: # highly negative imbalance, likely prices will decrease, time to sell SELL HIGH
-                    price = self.product_data[product].mean # moving average: approximate the price at the current "peak"
+                if remaining_sell:
+                    price = stats.mean + scaling_factor*math.sqrt(stats.get_var() / 2)
                     print("SELL", str(remaining_sell) + "x", price)
                     orders.append(Order(product, price, remaining_sell))
+
+                #### STRATEGY: DI IS INDICATOR FOR RATE OF CHANGE ####
+                # if self.depth_imbalance[product] > 0.7 and remaining_buy: # high positive imbalance, large likelihood prices will increase, higher demand than supply, buy as much as possible as this is peak low, BUY LOW
+                #     price = self.product_data[product].mean # moving average: approximate the price at the current "dip" 
+                #     print("BUY", str(remaining_buy) + "x", price)
+                #     orders.append(Order(product, price, remaining_buy))
+                # elif self.depth_imbalance[product] < 0.3 and remaining_sell: # highly negative imbalance, likely prices will decrease, time to sell SELL HIGH
+                #     price = self.product_data[product].mean # moving average: approximate the price at the current "peak"
+                #     print("SELL", str(remaining_sell) + "x", price)
+                #     orders.append(Order(product, price, remaining_sell))
                 
                 result[product] = orders
 
