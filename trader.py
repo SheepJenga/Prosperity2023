@@ -139,6 +139,8 @@ class Trader:
                     price = self.product_data[product].mean # moving average: approximate the price at the current "peak"
                     print("SELL", str(remaining_sell) + "x", price)
                     orders.append(Order(product, price, remaining_sell))
+                
+                result[product] = orders
 
             # # Initialize the list of Orders to be sent as an empty list
             # orders: list[Order] = []
