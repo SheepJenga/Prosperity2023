@@ -230,7 +230,7 @@ class Queue:
         self.data[self.head] = val 
 
         new_change = self.avg_change + ((self.mean - prev_mean) - self.prev_change) / self.n
-        self.prev_change = self.avg_change
+        self.prev_change = (self.mean - prev_mean)
         self.avg_change = new_change
 
     def get_mean(self):
