@@ -130,16 +130,26 @@ class Trader:
                 result[product] = orders
 
             elif product == 'BANANAS':
-                #### STRATEGY: LARGER DI LARGER THRESHOLD ####
-                scaling_factor = math.abs(self.depth_imbalance[product] - 0.5) + 1
-                if remaining_buy:
-                    price = stats.mean - scaling_factor*math.sqrt(stats.get_var() / 2)
+                #### STRATEGY: USE RATE OF CHANGE OF MOVING AVG TO ESTIMATE INCREASE/DECREASE OF PRICE ####
+                if remaining_buy and stats.avg_change > 0: # price start to increase: buy
+                    price = stats.mean
                     print("BUY", str(remaining_buy) + "x", price)
                     orders.append(Order(product, price, remaining_buy))
-                if remaining_sell:
-                    price = stats.mean + scaling_factor*math.sqrt(stats.get_var() / 2)
+                if remaining_sell and stats.avg_change < 0: # price start to decrease: sell
+                    price = stats.mean
                     print("SELL", str(remaining_sell) + "x", price)
                     orders.append(Order(product, price, remaining_sell))
+
+                #### STRATEGY: LARGER DI LARGER THRESHOLD ####
+                # scaling_factor = math.abs(self.depth_imbalance[product] - 0.5) + 1
+                # if remaining_buy:
+                #     price = stats.mean - scaling_factor*math.sqrt(stats.get_var() / 2)
+                #     print("BUY", str(remaining_buy) + "x", price)
+                #     orders.append(Order(product, price, remaining_buy))
+                # if remaining_sell:
+                #     price = stats.mean + scaling_factor*math.sqrt(stats.get_var() / 2)
+                #     print("SELL", str(remaining_sell) + "x", price)
+                #     orders.append(Order(product, price, remaining_sell))
 
                 #### STRATEGY: DI IS INDICATOR FOR RATE OF CHANGE ####
                 # if self.depth_imbalance[product] > 0.7 and remaining_buy: # high positive imbalance, large likelihood prices will increase, higher demand than supply, buy as much as possible as this is peak low, BUY LOW
@@ -208,6 +218,9 @@ class Queue:
         self.mean = init_val
         self.var = 0
 
+        self.avg_change = 0
+        self.prev_change = 0
+
     def enque(self, val):
         self.head = (self.head + 1) % self.size
         prev_mean = self.mean
@@ -215,6 +228,10 @@ class Queue:
         self.mean += (val - old_val) / self.n
         self.var += ((val - prev_mean) * (val - self.mean) - (old_val - prev_mean) * (old_val - self.mean)) / self.n
         self.data[self.head] = val 
+
+        new_change = self.avg_change + ((self.mean - prev_mean) - self.prev_change) / self.n
+        self.prev_change = self.avg_change
+        self.avg_change = new_change
 
     def get_mean(self):
         return self.mean
